@@ -30,5 +30,8 @@ public class IUserService {
     public void deleteUser(String id) {
         userRepository.deleteById(id);
     }
-
+    
+    public void deleteAll() {
+        userRepository.deleteAll();
+    }
 }
