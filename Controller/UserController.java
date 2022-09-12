@@ -3,24 +3,23 @@ package com.example.emp.controller;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import javax.validation.Valid;
+
 import com.example.emp.entity.User;
+import com.example.emp.entity.status;
+import com.example.emp.repository.UserRepository;
 import com.example.emp.services.IUserService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping(path="/developerCommunity")
 public class UserController {
+
+	@Autowired
+    UserRepository userRepository;  
 	
     private final IUserService userService ;
     
@@ -28,33 +27,64 @@ public class UserController {
     public UserController(IUserService userService) {
 		this.userService = userService;
 	}
-
-    @GetMapping
-    public List<User> list() {
-        return userService.listAllUser();
-    }
-
-
-	@PostMapping
-    public void add(@RequestBody User user) {
-        userService.saveUser(user);
-    }
+    
+	 @GetMapping("/developerCommunity")
+	    public List<User> list() {
+	        return userService.listAllUser();
+	    }
 	
-    @PutMapping("/{userid}")
-    public ResponseEntity<?> update(@RequestBody User user, @PathVariable String userid) {
-        try {
-            User existUser = userService.getUser(userid);
-            user.setUserid(userid);            
-            userService.saveUser(user);
-            return new ResponseEntity<>(HttpStatus.OK);
-        } catch (NoSuchElementException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-    }
-    @DeleteMapping("/{userid}")
-    public void delete(@PathVariable String userid) {
+	@PostMapping("/users/register")
+    public status registerUser(@Valid @RequestBody User newUser) {
+        List<User> users = userService.listAllUser();        
+        System.out.println("New user: " + newUser.toString());        
+        for (User user : users) {
+             System.out.println("Registered user: " + newUser.toString());            
+		if (user.equals(newUser)) {
+             System.out.println("User Already exists!");
+                return status.USER_ALREADY_EXISTS;
+            }
+             
+        }        userService.saveUser(newUser);
+        
+        return status.SUCCESS;
+    }   
+	
+	@PostMapping("/users/login")
+    public status loginUser(@Valid @RequestBody User user) {
+        List<User> users = userService.listAllUser();        
+        for (User other : users) {
+            if (other.equals(user)) {
+                user.setLoggedIn(true);
+                userService.saveUser(user);
+                return status.SUCCESS;
+            }
+        }        return status.FAILURE;
+    }    
+	
+	@PostMapping("/users/logout")
+    public status logUserOut(@Valid @RequestBody User user) {
+        List<User> users = userService.listAllUser();       
+        for (User other : users) {
+            if (other.equals(user)) {
+                user.setLoggedIn(false);
+                userService.saveUser(user);
+                return status.SUCCESS;
+            }
+        }        return status.FAILURE;
+    }    
+    
+	
+	@DeleteMapping("/{userid}")
+    public status delete(@PathVariable String userid) {
 
         userService.deleteUser(userid);
-}
+        return status.SUCCESS;
+    }
+	
+    @DeleteMapping("/users/all")
+    public status deleteUsers() {
+        userService.deleteAll();
+        return status.SUCCESS;
+    }
     
 }
